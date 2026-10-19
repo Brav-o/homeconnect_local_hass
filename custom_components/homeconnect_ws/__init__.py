@@ -44,6 +44,7 @@ if TYPE_CHECKING:
     from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse
     from homeassistant.helpers.typing import ConfigType
     from homeconnect_websocket import HomeAppliance
+    from homeconnect_websocket.entities import Program
 
     from .entity_descriptions import _EntityDescriptionsType
 
@@ -81,6 +82,31 @@ class HCConfig:
 type HCConfigEntry = ConfigEntry[HCData]
 
 HC_KEY: HassKey[HCConfig] = HassKey(DOMAIN)
+
+
+def _options_by_uid(appliance: HomeAppliance, options: dict) -> dict:
+    options_by_uid = {}
+    for key, value in options.items():
+        entity = appliance.entities.get(key)
+        if entity is None:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="option_not_available",
+                translation_placeholders={"option": key},
+            )
+        options_by_uid[entity.uid] = value
+    return options_by_uid
+
+
+def _get_program_or_raise(appliance: HomeAppliance, key: str) -> Program:
+    program = appliance.programs.get(key)
+    if program is None:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="program_not_available",
+            translation_placeholders={"program": key},
+        )
+    return program
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -137,16 +163,24 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             )
             options[entity.uid] = _duration_to_seconds(call.data["finish_in"])
 
-        if appliance.selected_program:
-            try:
-                await appliance.selected_program.start(options)
-            except CodeResponsError as exc:
-                _raise_start_error(exc)
-        else:
+        options.update(_options_by_uid(appliance, call.data.get("options", {})))
+
+        # A given program is started with its options in one request, without selecting it
+        # first: ovens in standby accept a selection but don't keep it.
+        program = (
+            _get_program_or_raise(appliance, call.data["program"])
+            if "program" in call.data
+            else appliance.selected_program
+        )
+        if not program:
             raise ServiceValidationError(
                 translation_domain=DOMAIN,
                 translation_key="no_program_selected",
             )
+        try:
+            await program.start(options)
+        except CodeResponsError as exc:
+            _raise_start_error(exc)
 
     @error_decorator
     async def handle_set_start_in(call: ServiceCall) -> ServiceResponse:

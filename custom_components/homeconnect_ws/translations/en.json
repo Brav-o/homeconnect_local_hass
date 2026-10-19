@@ -3611,7 +3611,7 @@
   "services": {
     "start_program": {
       "name": "Start Program",
-      "description": "Start the selected Program",
+      "description": "Start the selected Program, or the given Program with its Options",
       "fields": {
         "device_id": {
           "name": "Appliance",
@@ -3624,6 +3624,14 @@
         "finish_in": {
           "name": "Finish in",
           "description": "Time the Program should be finished in"
+        },
+        "program": {
+          "name": "Program",
+          "description": "Key of the Program to start instead of the selected one, e.g. Cooking.Oven.Program.HeatingMode.3DHotAir"
+        },
+        "options": {
+          "name": "Options",
+          "description": "Program Options to set when starting, by key, e.g. {\"Cooking.Oven.Option.SetpointTemperature\": 200}"
         }
       }
     },
@@ -3658,6 +3666,12 @@
     },
     "no_program_selected": {
       "message": "No Program selected"
+    },
+    "program_not_available": {
+      "message": "Program {program} is not available on this Appliance"
+    },
+    "option_not_available": {
+      "message": "Option {option} is not available on this Appliance"
     },
     "auth_failed": {
       "message": "Authentication failed {host}"

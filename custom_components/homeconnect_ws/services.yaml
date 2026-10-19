@@ -13,6 +13,16 @@ start_program:
       required: false
       selector:
         duration:
+    program:
+      required: false
+      example: "Cooking.Oven.Program.HeatingMode.3DHotAir"
+      selector:
+        text:
+    options:
+      required: false
+      example: '{"Cooking.Oven.Option.SetpointTemperature": 200, "BSH.Common.Option.Duration": 1800}'
+      selector:
+        object:
 
 set_start_in:
   fields:
